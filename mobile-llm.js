@@ -129,7 +129,15 @@ class MobileLLM {
             // Check for WebGPU support with better mobile detection
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const hasWebGPU = !!navigator.gpu;
+            
+            // More robust WebGPU detection
+            let hasWebGPU = false;
+            try {
+                hasWebGPU = !!(navigator.gpu && navigator.gpu.requestAdapter);
+            } catch (e) {
+                console.log('WebGPU detection failed:', e);
+                hasWebGPU = false;
+            }
             
             // For iOS, try to enable WebGPU even if not detected initially
             if (isIOS && !hasWebGPU) {
@@ -137,14 +145,15 @@ class MobileLLM {
                 
                 // Try to request WebGPU adapter on iOS
                 try {
-                    if (navigator.gpu) {
+                    if (navigator.gpu && navigator.gpu.requestAdapter) {
                         const adapter = await navigator.gpu.requestAdapter();
                         if (adapter) {
                             console.log('WebGPU adapter found on iOS');
+                            hasWebGPU = true;
                         }
                     }
                 } catch (e) {
-                    console.log('WebGPU not available on this iOS version');
+                    console.log('WebGPU not available on this iOS version:', e);
                 }
             }
             
@@ -312,6 +321,11 @@ class MobileLLM {
             this.updateStatus('Loading model from uploaded file...', 60);
             this.updateUploadStatus('Initializing model...', 'loading');
 
+            // Check if MediaPipe GenAI is properly loaded
+            if (!this.LlmInference || !this.genai) {
+                throw new Error('MediaPipe GenAI not properly loaded. Please refresh the page and try again.');
+            }
+
             // Initialize LLM with uploaded model
             this.llmInference = await this.LlmInference.createFromOptions(this.genai, {
                 baseOptions: {
@@ -336,11 +350,30 @@ class MobileLLM {
         } catch (error) {
             console.error('Error loading uploaded model:', error);
             this.updateStatus('Failed to load model.', 0);
-            this.updateUploadStatus(`Error loading model: ${error.message}`, 'error');
+            
+            // Provide more specific error messages
+            let errorMessage = error.message;
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            
+            if (error.message.includes('navigator.gpu') || error.message.includes('requestAdapter')) {
+                errorMessage = 'WebGPU not available on this device/browser. This is required for running AI models locally.';
+                if (isIOS) {
+                    errorMessage += ' iOS Safari has limited WebGPU support. Try Safari Technology Preview or Chrome on iOS.';
+                }
+            } else if (error.message.includes('memory') || error.message.includes('Memory')) {
+                errorMessage = 'Model too large for available memory. Try a smaller model or close other browser tabs.';
+                if (isIOS) {
+                    errorMessage += ' iOS has stricter memory limitations.';
+                }
+            } else if (error.message.includes('WASM') || error.message.includes('wasm')) {
+                errorMessage = 'WebAssembly loading failed. This might be due to browser security restrictions or network issues.';
+            }
+            
+            this.updateUploadStatus(`Error loading model: ${errorMessage}`, 'error');
             if (this.uploadBtn) {
                 this.uploadBtn.disabled = false;
             }
-            this.showError(`Failed to load model: ${error.message}`);
+            this.showError(`Failed to load model: ${errorMessage}`);
         }
     }
 
