@@ -124,14 +124,29 @@ class MobileLLM {
 
     async initializeLLM() {
         try {
-            this.updateStatus('Loading MediaPipe GenAI...', 10);
+            this.updateStatus('Checking browser capabilities...', 10);
             
-            // Check for WebGPU support
-            if (!navigator.gpu) {
-                throw new Error('WebGPU is not supported in this browser. Please use a modern browser with WebGPU support.');
+            // Check for WebGPU support with better mobile detection
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const hasWebGPU = !!navigator.gpu;
+            
+            if (!hasWebGPU) {
+                if (isMobile) {
+                    this.updateStatus('Mobile browser detected - WebGPU not available', 30);
+                    this.addMessage('assistant', `📱 **Mobile Browser Detected**\n\nYour mobile browser doesn't support WebGPU, which is required for running AI models locally. However, you can still:\n\n✅ **Test the interface** - Try the demo mode\n✅ **Upload model files** - Test the upload functionality\n✅ **Explore settings** - Adjust parameters\n\n**For full AI functionality, try:**\n• Chrome 113+ on Android\n• Safari 16.4+ on iOS\n• Desktop browsers with WebGPU support\n\n**Current mode:** Demo mode with simulated responses`);
+                } else {
+                    this.addMessage('assistant', `🌐 **WebGPU Not Available**\n\nYour browser doesn't support WebGPU, which is required for running AI models locally. Please try:\n\n✅ **Chrome 113+** (recommended)\n✅ **Safari 16.4+**\n✅ **Firefox 113+**\n✅ **Edge 113+**\n\n**Current mode:** Demo mode with simulated responses`);
+                }
+                
+                this.updateStatus('Using demo mode - WebGPU not supported', 50);
+                this.isInitialized = true;
+                if (this.sendBtn) {
+                    this.sendBtn.disabled = false;
+                }
+                return;
             }
 
-            this.updateStatus('Initializing GenAI tasks...', 30);
+            this.updateStatus('WebGPU detected - Loading MediaPipe GenAI...', 20);
             
             // Try to load MediaPipe GenAI dynamically
             let FilesetResolver, LlmInference;
@@ -141,25 +156,41 @@ class MobileLLM {
                 LlmInference = mediapipeModule.LlmInference;
             } catch (importError) {
                 console.warn('MediaPipe GenAI not available, using fallback:', importError);
-                // For now, we'll use a mock implementation
                 this.updateStatus('MediaPipe GenAI not available. Using demo mode.', 50);
                 this.isInitialized = true;
-                this.sendBtn.disabled = false;
-                this.addMessage('assistant', 'Hello! I\'m in demo mode since MediaPipe GenAI is not available. This is a placeholder for the real LLM functionality.');
+                if (this.sendBtn) {
+                    this.sendBtn.disabled = false;
+                }
+                this.addMessage('assistant', '🔧 **MediaPipe GenAI Not Available**\n\nWhile WebGPU is supported, the MediaPipe GenAI library couldn\'t be loaded. This might be due to:\n\n• Network connectivity issues\n• CDN availability\n• Browser compatibility\n\n**Current mode:** Demo mode with simulated responses\n\nYou can still test the upload functionality and interface!');
                 return;
             }
 
-            this.genai = await FilesetResolver.forGenAiTasks(
-                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.23/wasm"
-            );
-            this.LlmInference = LlmInference;
-
-            this.updateStatus('Ready to load model. Click "Load Model File" to upload your model.', 100);
-            this.isInitialized = true;
-            this.sendBtn.disabled = false;
+            this.updateStatus('Initializing GenAI tasks...', 60);
             
-            // Add welcome message
-            this.addMessage('assistant', 'Hello! I\'m ready to help. Please click "Load Model File" to upload your Gemma model, or start chatting in demo mode.');
+            try {
+                this.genai = await FilesetResolver.forGenAiTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.23/wasm"
+                );
+                this.LlmInference = LlmInference;
+
+                this.updateStatus('✅ Ready to load model! Click "Load Model File" to upload your model.', 100);
+                this.isInitialized = true;
+                if (this.sendBtn) {
+                    this.sendBtn.disabled = false;
+                }
+                
+                // Add welcome message
+                this.addMessage('assistant', '🚀 **Full AI Mode Ready!**\n\nYour browser supports WebGPU and MediaPipe GenAI is loaded successfully!\n\n**Next steps:**\n1. Click "📁 Load Model File" to upload your Gemma model\n2. Or start chatting in demo mode to test the interface\n\n**Supported model formats:** .bin files (~1.3GB for Gemma 2B)');
+
+            } catch (genaiError) {
+                console.warn('GenAI initialization failed:', genaiError);
+                this.updateStatus('GenAI initialization failed. Using demo mode.', 50);
+                this.isInitialized = true;
+                if (this.sendBtn) {
+                    this.sendBtn.disabled = false;
+                }
+                this.addMessage('assistant', '⚠️ **GenAI Initialization Failed**\n\nWebGPU is available but MediaPipe GenAI couldn\'t be initialized. This might be due to:\n\n• WASM loading issues\n• Memory constraints\n• Browser security restrictions\n\n**Current mode:** Demo mode with simulated responses\n\nYou can still test the upload functionality!');
+            }
 
         } catch (error) {
             console.error('Error initializing LLM:', error);
@@ -272,14 +303,30 @@ class MobileLLM {
                 // Demo mode - simulate response
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 typingMessage.remove();
-                this.addMessage('assistant', `This is a demo response to: "${message}". Please upload a model file using the "Load Model File" button to get real AI responses.`);
-                            this.isGenerating = false;
-            if (this.sendBtn) {
-                this.sendBtn.classList.remove('loading');
-                this.sendBtn.disabled = false;
+                
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const hasWebGPU = !!navigator.gpu;
+                
+                let demoMessage = `🎭 **Demo Response**\n\nThis is a simulated response to: "${message}"\n\n`;
+                
+                if (!hasWebGPU) {
+                    if (isMobile) {
+                        demoMessage += `📱 **Mobile Browser Limitation**\nYour mobile browser doesn't support WebGPU, which is required for running AI models locally.\n\n**To get real AI responses:**\n• Try Chrome 113+ on Android\n• Try Safari 16.4+ on iOS\n• Use a desktop browser with WebGPU support`;
+                    } else {
+                        demoMessage += `🌐 **Browser Limitation**\nYour browser doesn't support WebGPU, which is required for running AI models locally.\n\n**To get real AI responses:**\n• Try Chrome 113+ (recommended)\n• Try Safari 16.4+\n• Try Firefox 113+\n• Try Edge 113+`;
+                    }
+                } else {
+                    demoMessage += `📁 **Upload Model Required**\nYour browser supports WebGPU! To get real AI responses:\n\n1. Click "📁 Load Model File" button\n2. Select your Gemma model (.bin file)\n3. Wait for model to load\n4. Start chatting with real AI!`;
+                }
+                
+                this.addMessage('assistant', demoMessage);
+                this.isGenerating = false;
+                if (this.sendBtn) {
+                    this.sendBtn.classList.remove('loading');
+                    this.sendBtn.disabled = false;
+                }
+                return;
             }
-            return;
-        }
 
         // Generate response with streaming
         let fullResponse = '';

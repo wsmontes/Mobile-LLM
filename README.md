@@ -148,12 +148,17 @@ https://yourusername.github.io/mobile-llm-chat
 
 ### Browser Compatibility
 
-| Browser | Version | Status |
-|---------|---------|--------|
-| Chrome | 113+ | ✅ Full support |
-| Safari | 16.4+ | ✅ Full support |
-| Firefox | 113+ | ✅ Full support |
-| Edge | 113+ | ✅ Full support |
+| Browser | Version | WebGPU Support | Status |
+|---------|---------|---------------|--------|
+| Chrome | 113+ | ✅ Yes | ✅ Full support |
+| Safari | 16.4+ | ✅ Yes | ✅ Full support |
+| Firefox | 113+ | ✅ Yes | ✅ Full support |
+| Edge | 113+ | ✅ Yes | ✅ Full support |
+| Mobile Chrome | 113+ | ⚠️ Limited | 🔶 Partial (demo mode) |
+| Mobile Safari | 16.4+ | ⚠️ Limited | 🔶 Partial (demo mode) |
+| Older browsers | < 113 | ❌ No | 🔴 Demo mode only |
+
+**Note:** Mobile browsers have limited WebGPU support, so the app will run in demo mode on mobile devices. The upload functionality still works for testing purposes.
 
 ## Troubleshooting
 
