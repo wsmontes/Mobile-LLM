@@ -38,53 +38,88 @@ class MobileLLM {
         this.temperatureValue = document.getElementById('temperature-value');
         this.maxTokensValue = document.getElementById('max-tokens-value');
         this.topKValue = document.getElementById('top-k-value');
+        
+        // Validate that all required elements exist
+        const requiredElements = [
+            'status', 'progress-fill', 'chat-messages', 'user-input', 
+            'send-btn', 'clear-btn', 'settings-btn', 'settings-modal', 
+            'close-settings', 'upload-model-btn', 'model-file-input', 
+            'upload-status', 'temperature', 'max-tokens', 'top-k',
+            'temperature-value', 'max-tokens-value', 'top-k-value'
+        ];
+        
+        for (const id of requiredElements) {
+            if (!document.getElementById(id)) {
+                console.error(`Required element with id '${id}' not found`);
+            }
+        }
     }
 
     bindEvents() {
         // Send button
-        this.sendBtn.addEventListener('click', () => this.sendMessage());
+        if (this.sendBtn) {
+            this.sendBtn.addEventListener('click', () => this.sendMessage());
+        }
         
         // Enter key in textarea
-        this.userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.sendMessage();
-            }
-        });
+        if (this.userInput) {
+            this.userInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+        }
 
         // Clear chat
-        this.clearBtn.addEventListener('click', () => this.clearChat());
+        if (this.clearBtn) {
+            this.clearBtn.addEventListener('click', () => this.clearChat());
+        }
 
         // Settings
-        this.settingsBtn.addEventListener('click', () => this.openSettings());
-        this.closeSettingsBtn.addEventListener('click', () => this.closeSettings());
+        if (this.settingsBtn) {
+            this.settingsBtn.addEventListener('click', () => this.openSettings());
+        }
+        if (this.closeSettingsBtn) {
+            this.closeSettingsBtn.addEventListener('click', () => this.closeSettings());
+        }
 
         // Settings controls
-        this.temperatureInput.addEventListener('input', (e) => {
-            this.settings.temperature = parseFloat(e.target.value);
-            this.temperatureValue.textContent = e.target.value;
-        });
+        if (this.temperatureInput && this.temperatureValue) {
+            this.temperatureInput.addEventListener('input', (e) => {
+                this.settings.temperature = parseFloat(e.target.value);
+                this.temperatureValue.textContent = e.target.value;
+            });
+        }
 
-        this.maxTokensInput.addEventListener('input', (e) => {
-            this.settings.maxTokens = parseInt(e.target.value);
-            this.maxTokensValue.textContent = e.target.value;
-        });
+        if (this.maxTokensInput && this.maxTokensValue) {
+            this.maxTokensInput.addEventListener('input', (e) => {
+                this.settings.maxTokens = parseInt(e.target.value);
+                this.maxTokensValue.textContent = e.target.value;
+            });
+        }
 
-        this.topKInput.addEventListener('input', (e) => {
-            this.settings.topK = parseInt(e.target.value);
-            this.topKValue.textContent = e.target.value;
-        });
+        if (this.topKInput && this.topKValue) {
+            this.topKInput.addEventListener('input', (e) => {
+                this.settings.topK = parseInt(e.target.value);
+                this.topKValue.textContent = e.target.value;
+            });
+        }
 
         // Model upload
-        this.uploadBtn.addEventListener('click', () => this.modelFileInput.click());
-        this.modelFileInput.addEventListener('change', (e) => this.handleModelUpload(e));
+        if (this.uploadBtn && this.modelFileInput) {
+            this.uploadBtn.addEventListener('click', () => this.modelFileInput.click());
+            this.modelFileInput.addEventListener('change', (e) => this.handleModelUpload(e));
+        }
 
         // Close modal when clicking outside
-        this.settingsModal.addEventListener('click', (e) => {
-            if (e.target === this.settingsModal) {
-                this.closeSettings();
-            }
-        });
+        if (this.settingsModal) {
+            this.settingsModal.addEventListener('click', (e) => {
+                if (e.target === this.settingsModal) {
+                    this.closeSettings();
+                }
+            });
+        }
     }
 
     async initializeLLM() {
@@ -134,8 +169,10 @@ class MobileLLM {
     }
 
     updateStatus(message, progress = null) {
-        this.statusElement.textContent = message;
-        if (progress !== null) {
+        if (this.statusElement) {
+            this.statusElement.textContent = message;
+        }
+        if (progress !== null && this.progressFill) {
             this.progressFill.style.width = `${progress}%`;
         }
     }
@@ -158,7 +195,9 @@ class MobileLLM {
         }
 
         this.updateUploadStatus('Uploading model file...', 'loading');
-        this.uploadBtn.disabled = true;
+        if (this.uploadBtn) {
+            this.uploadBtn.disabled = true;
+        }
 
         try {
             // Create object URL for the file
@@ -180,8 +219,10 @@ class MobileLLM {
 
             this.updateStatus('Model loaded successfully! Ready to chat.', 100);
             this.updateUploadStatus(`Model loaded: ${file.name}`, 'success');
-            this.uploadBtn.textContent = '✅ Model Loaded';
-            this.uploadBtn.disabled = true;
+            if (this.uploadBtn) {
+                this.uploadBtn.textContent = '✅ Model Loaded';
+                this.uploadBtn.disabled = true;
+            }
 
             // Add success message
             this.addMessage('assistant', `Great! I've loaded the ${file.name} model. I'm now ready to help you with questions, writing, analysis, and more. What would you like to know?`);
@@ -190,32 +231,40 @@ class MobileLLM {
             console.error('Error loading uploaded model:', error);
             this.updateStatus('Failed to load model.', 0);
             this.updateUploadStatus(`Error loading model: ${error.message}`, 'error');
-            this.uploadBtn.disabled = false;
+            if (this.uploadBtn) {
+                this.uploadBtn.disabled = false;
+            }
             this.showError(`Failed to load model: ${error.message}`);
         }
     }
 
     updateUploadStatus(message, type = '') {
-        this.uploadStatus.textContent = message;
-        this.uploadStatus.className = `upload-status ${type}`;
+        if (this.uploadStatus) {
+            this.uploadStatus.textContent = message;
+            this.uploadStatus.className = `upload-status ${type}`;
+        }
     }
 
     async sendMessage() {
         if (!this.isInitialized || this.isGenerating) return;
 
-        const message = this.userInput.value.trim();
+        const message = this.userInput?.value?.trim() || '';
         if (!message) return;
 
         // Add user message to chat
         this.addMessage('user', message);
-        this.userInput.value = '';
+        if (this.userInput) {
+            this.userInput.value = '';
+        }
 
         // Show typing indicator
         const typingMessage = this.addMessage('assistant', 'Thinking...', 'typing');
 
         this.isGenerating = true;
-        this.sendBtn.classList.add('loading');
-        this.sendBtn.disabled = true;
+        if (this.sendBtn) {
+            this.sendBtn.classList.add('loading');
+            this.sendBtn.disabled = true;
+        }
 
         try {
             // Check if we're in demo mode (no real LLM)
@@ -224,48 +273,59 @@ class MobileLLM {
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 typingMessage.remove();
                 this.addMessage('assistant', `This is a demo response to: "${message}". Please upload a model file using the "Load Model File" button to get real AI responses.`);
-                this.isGenerating = false;
+                            this.isGenerating = false;
+            if (this.sendBtn) {
                 this.sendBtn.classList.remove('loading');
                 this.sendBtn.disabled = false;
-                return;
             }
+            return;
+        }
 
-            // Generate response with streaming
-            let fullResponse = '';
-            await this.llmInference.generateResponse(
-                message,
-                {
-                    maxTokens: this.settings.maxTokens,
-                    topK: this.settings.topK,
-                    temperature: this.settings.temperature,
-                    randomSeed: this.settings.randomSeed
-                },
-                (partialResult, done) => {
-                    if (done) {
-                        // Remove typing indicator and add final response
-                        typingMessage.remove();
-                        this.addMessage('assistant', fullResponse);
-                        this.isGenerating = false;
+        // Generate response with streaming
+        let fullResponse = '';
+        await this.llmInference.generateResponse(
+            message,
+            {
+                maxTokens: this.settings.maxTokens,
+                topK: this.settings.topK,
+                temperature: this.settings.temperature,
+                randomSeed: this.settings.randomSeed
+            },
+            (partialResult, done) => {
+                if (done) {
+                    // Remove typing indicator and add final response
+                    typingMessage.remove();
+                    this.addMessage('assistant', fullResponse);
+                    this.isGenerating = false;
+                    if (this.sendBtn) {
                         this.sendBtn.classList.remove('loading');
                         this.sendBtn.disabled = false;
-                    } else {
-                        fullResponse += partialResult;
-                        typingMessage.textContent = fullResponse;
                     }
+                } else {
+                    fullResponse += partialResult;
+                    typingMessage.textContent = fullResponse;
                 }
-            );
+            }
+        );
 
-        } catch (error) {
-            console.error('Error generating response:', error);
-            typingMessage.remove();
-            this.addMessage('assistant', 'Sorry, I encountered an error while generating a response. Please try again.');
-            this.isGenerating = false;
+    } catch (error) {
+        console.error('Error generating response:', error);
+        typingMessage.remove();
+        this.addMessage('assistant', 'Sorry, I encountered an error while generating a response. Please try again.');
+        this.isGenerating = false;
+        if (this.sendBtn) {
             this.sendBtn.classList.remove('loading');
             this.sendBtn.disabled = false;
         }
     }
+    }
 
     addMessage(sender, content, className = '') {
+        if (!this.chatMessages) {
+            console.error('Chat messages container not found');
+            return null;
+        }
+        
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender} ${className}`;
         messageDiv.textContent = content;
@@ -277,19 +337,29 @@ class MobileLLM {
     }
 
     clearChat() {
-        this.chatMessages.innerHTML = '';
-        this.addMessage('assistant', 'Chat cleared. How can I help you today?');
+        if (this.chatMessages) {
+            this.chatMessages.innerHTML = '';
+            this.addMessage('assistant', 'Chat cleared. How can I help you today?');
+        }
     }
 
     openSettings() {
-        this.settingsModal.style.display = 'block';
+        if (this.settingsModal) {
+            this.settingsModal.style.display = 'block';
+        }
     }
 
     closeSettings() {
-        this.settingsModal.style.display = 'none';
+        if (this.settingsModal) {
+            this.settingsModal.style.display = 'none';
+        }
     }
 
     showError(message) {
+        if (!this.chatMessages) {
+            console.error('Chat messages container not found');
+            return;
+        }
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error';
         errorDiv.textContent = message;
@@ -297,6 +367,10 @@ class MobileLLM {
     }
 
     showSuccess(message) {
+        if (!this.chatMessages) {
+            console.error('Chat messages container not found');
+            return;
+        }
         const successDiv = document.createElement('div');
         successDiv.className = 'success';
         successDiv.textContent = message;

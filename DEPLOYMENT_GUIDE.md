@@ -98,14 +98,29 @@ The application now includes a robust demo mode that:
 
 ## 📱 Model File Handling
 
+### 🎯 New: Mobile Upload Functionality
+The app now includes a **"Load Model File"** button that allows users to:
+- Upload model files directly from their mobile device
+- Validate file type and size automatically
+- Load models without pre-downloading to the repository
+- Perfect for mobile testing and deployment
+
 ### For Users Who Want Full LLM Functionality
+**Option A: Upload from Mobile (Recommended)**
+1. Open the app on your mobile device
+2. Click "📁 Load Model File" button
+3. Select your `gemma-2b-it-gpu-int4.bin` file
+4. The app automatically loads and initializes the model
+
+**Option B: Download and Place Model File**
 1. Download the model from [Kaggle](https://www.kaggle.com/models/google/gemma-2-2b-it-gpu-int4)
 2. Place it in the `assets/` directory
 3. The app will automatically detect and use it
 
 ### For GitHub Pages Deployment
 - The demo mode works perfectly without the model
-- Users can still download the model separately
+- Users can upload models directly from their devices
+- No need to pre-download or distribute model files
 - Consider using GitHub Releases for model distribution
 
 ## 🔒 Security & Privacy

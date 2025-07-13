@@ -25,16 +25,25 @@ A JavaScript module that runs large language models (LLMs) directly on mobile de
 
 ## Setup Instructions
 
-### 1. Download the Model (Optional for Full LLM Functionality)
+### 1. Load Model File (Optional for Full LLM Functionality)
+
+**🎯 Easy Mobile Testing**: You can now upload the model file directly from your mobile device using the "Load Model File" button!
 
 **⚠️ Important**: The model file is **not included** in this repository due to GitHub's 100MB file size limit. The app includes a **demo mode** that works without the model file.
 
+#### Option A: Upload from Mobile Device (Recommended)
+1. Open the app on your mobile device
+2. Click the **"📁 Load Model File"** button
+3. Select your `gemma-2b-it-gpu-int4.bin` file
+4. The app will automatically load and initialize the model
+
+#### Option B: Download and Place Model File
 For full LLM functionality, download the Gemma-2 2B model:
 - Visit: [Gemma-2 2B GPU INT4](https://www.kaggle.com/models/google/gemma-2-2b-it-gpu-int4)
 - Download the `gemma-2b-it-gpu-int4.bin` file (~1.3GB)
 - Alternative: Check the [Releases](../../releases) section for model downloads
 
-### 2. Place Model File (Optional)
+### 2. Place Model File (Optional - for Option B)
 
 If you downloaded the model, place it in the assets directory:
 ```
@@ -97,10 +106,11 @@ https://yourusername.github.io/mobile-llm-chat
 ## Usage
 
 ### Basic Usage
-1. **Load the page** - The model will automatically start loading
-2. **Wait for initialization** - Progress bar shows loading status
-3. **Start chatting** - Type your message and press Send or Enter
-4. **Adjust settings** - Click the ⚙️ button to modify generation parameters
+1. **Load the page** - The app will initialize MediaPipe GenAI
+2. **Upload model file** - Click "📁 Load Model File" to upload your Gemma model (or skip for demo mode)
+3. **Wait for initialization** - Progress bar shows loading status
+4. **Start chatting** - Type your message and press Send or Enter
+5. **Adjust settings** - Click the ⚙️ button to modify generation parameters
 
 ### Settings
 - **Temperature**: Controls randomness (0.1 = focused, 1.5 = creative)
