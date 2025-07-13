@@ -312,4 +312,59 @@ header p {
         align-self: flex-end;
         width: 80px;
     }
+}
+
+/* Model Upload Section */
+.model-upload-section {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.upload-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    margin: 10px 0;
+}
+
+.upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.upload-btn:active {
+    transform: translateY(0);
+}
+
+.upload-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.upload-status {
+    font-size: 12px;
+    color: #666;
+    margin-top: 8px;
+    min-height: 16px;
+}
+
+.upload-status.success {
+    color: #4CAF50;
+}
+
+.upload-status.error {
+    color: #f44336;
+}
+
+.upload-status.loading {
+    color: #2196F3;
 } 

@@ -26,6 +26,11 @@ class MobileLLM {
         this.settingsModal = document.getElementById('settings-modal');
         this.closeSettingsBtn = document.getElementById('close-settings');
         
+        // Model upload elements
+        this.uploadBtn = document.getElementById('upload-model-btn');
+        this.modelFileInput = document.getElementById('model-file-input');
+        this.uploadStatus = document.getElementById('upload-status');
+        
         // Settings controls
         this.temperatureInput = document.getElementById('temperature');
         this.maxTokensInput = document.getElementById('max-tokens');
@@ -70,6 +75,10 @@ class MobileLLM {
             this.topKValue.textContent = e.target.value;
         });
 
+        // Model upload
+        this.uploadBtn.addEventListener('click', () => this.modelFileInput.click());
+        this.modelFileInput.addEventListener('change', (e) => this.handleModelUpload(e));
+
         // Close modal when clicking outside
         this.settingsModal.addEventListener('click', (e) => {
             if (e.target === this.settingsModal) {
@@ -105,44 +114,17 @@ class MobileLLM {
                 return;
             }
 
-            const genai = await FilesetResolver.forGenAiTasks(
+            this.genai = await FilesetResolver.forGenAiTasks(
                 "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.23/wasm"
             );
+            this.LlmInference = LlmInference;
 
-            this.updateStatus('Loading LLM model...', 60);
-            
-            // Check if model file exists
-            try {
-                const modelResponse = await fetch('./assets/gemma-1.1-2b-it-gpu-int4.bin', { method: 'HEAD' });
-                if (!modelResponse.ok) {
-                    throw new Error('Model file not found. Please download the Gemma 2B model file.');
-                }
-            } catch (modelError) {
-                console.warn('Model file not available:', modelError);
-                this.updateStatus('Model file not found. Using demo mode.', 50);
-                this.isInitialized = true;
-                this.sendBtn.disabled = false;
-                this.addMessage('assistant', 'Hello! I\'m in demo mode since the model file is not available. Please download the Gemma 2B model file to ./assets/gemma-1.1-2b-it-gpu-int4.bin to use the real LLM functionality.');
-                return;
-            }
-            
-            // Initialize LLM Inference
-            this.llmInference = await LlmInference.createFromOptions(genai, {
-                baseOptions: {
-                    modelAssetPath: './assets/gemma-1.1-2b-it-gpu-int4.bin'
-                },
-                maxTokens: this.settings.maxTokens,
-                topK: this.settings.topK,
-                temperature: this.settings.temperature,
-                randomSeed: this.settings.randomSeed
-            });
-
-            this.updateStatus('Model loaded successfully! Ready to chat.', 100);
+            this.updateStatus('Ready to load model. Click "Load Model File" to upload your model.', 100);
             this.isInitialized = true;
             this.sendBtn.disabled = false;
             
             // Add welcome message
-            this.addMessage('assistant', 'Hello! I\'m your mobile AI assistant. I can help you with questions, writing, analysis, and more. What would you like to know?');
+            this.addMessage('assistant', 'Hello! I\'m ready to help. Please click "Load Model File" to upload your Gemma model, or start chatting in demo mode.');
 
         } catch (error) {
             console.error('Error initializing LLM:', error);
@@ -156,6 +138,66 @@ class MobileLLM {
         if (progress !== null) {
             this.progressFill.style.width = `${progress}%`;
         }
+    }
+
+    async handleModelUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.name.endsWith('.bin')) {
+            this.updateUploadStatus('Please select a .bin model file.', 'error');
+            return;
+        }
+
+        // Validate file size (should be around 1.3GB for Gemma 2B)
+        const fileSizeGB = file.size / (1024 * 1024 * 1024);
+        if (fileSizeGB < 0.5 || fileSizeGB > 3) {
+            this.updateUploadStatus(`File size (${fileSizeGB.toFixed(1)}GB) seems unusual for a Gemma model. Expected ~1.3GB.`, 'error');
+            return;
+        }
+
+        this.updateUploadStatus('Uploading model file...', 'loading');
+        this.uploadBtn.disabled = true;
+
+        try {
+            // Create object URL for the file
+            const modelUrl = URL.createObjectURL(file);
+            
+            this.updateStatus('Loading model from uploaded file...', 60);
+            this.updateUploadStatus('Initializing model...', 'loading');
+
+            // Initialize LLM with uploaded model
+            this.llmInference = await this.LlmInference.createFromOptions(this.genai, {
+                baseOptions: {
+                    modelAssetPath: modelUrl
+                },
+                maxTokens: this.settings.maxTokens,
+                topK: this.settings.topK,
+                temperature: this.settings.temperature,
+                randomSeed: this.settings.randomSeed
+            });
+
+            this.updateStatus('Model loaded successfully! Ready to chat.', 100);
+            this.updateUploadStatus(`Model loaded: ${file.name}`, 'success');
+            this.uploadBtn.textContent = '✅ Model Loaded';
+            this.uploadBtn.disabled = true;
+
+            // Add success message
+            this.addMessage('assistant', `Great! I've loaded the ${file.name} model. I'm now ready to help you with questions, writing, analysis, and more. What would you like to know?`);
+
+        } catch (error) {
+            console.error('Error loading uploaded model:', error);
+            this.updateStatus('Failed to load model.', 0);
+            this.updateUploadStatus(`Error loading model: ${error.message}`, 'error');
+            this.uploadBtn.disabled = false;
+            this.showError(`Failed to load model: ${error.message}`);
+        }
+    }
+
+    updateUploadStatus(message, type = '') {
+        this.uploadStatus.textContent = message;
+        this.uploadStatus.className = `upload-status ${type}`;
     }
 
     async sendMessage() {
@@ -181,7 +223,7 @@ class MobileLLM {
                 // Demo mode - simulate response
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 typingMessage.remove();
-                this.addMessage('assistant', `This is a demo response to: "${message}". In a real implementation, this would be generated by the MediaPipe GenAI LLM model.`);
+                this.addMessage('assistant', `This is a demo response to: "${message}". Please upload a model file using the "Load Model File" button to get real AI responses.`);
                 this.isGenerating = false;
                 this.sendBtn.classList.remove('loading');
                 this.sendBtn.disabled = false;
