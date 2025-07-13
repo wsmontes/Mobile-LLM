@@ -1,0 +1,47 @@
+{
+  "name": "mobile-llm-chat",
+  "version": "1.0.0",
+  "description": "A JavaScript module for running LLM models on mobile devices using Google AI Edge MediaPipe",
+  "main": "mobile-llm.js",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "serve": "npx serve -p 8000",
+    "dev": "npx live-server --port=8000",
+    "build": "echo 'No build step required - pure JavaScript'",
+    "test": "echo 'Open http://localhost:8000 in your browser to test'"
+  },
+  "keywords": [
+    "llm",
+    "mobile",
+    "javascript",
+    "mediapipe",
+    "google-ai-edge",
+    "gemma",
+    "chat",
+    "offline",
+    "webgpu"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/mobile-llm-chat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/mobile-llm-chat/issues"
+  },
+  "homepage": "https://yourusername.github.io/mobile-llm-chat",
+  "devDependencies": {
+    "serve": "^14.2.1",
+    "live-server": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "Chrome >= 113",
+    "Safari >= 16.4",
+    "Firefox >= 113",
+    "Edge >= 113"
+  ]
+} 
