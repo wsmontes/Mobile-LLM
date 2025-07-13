@@ -128,22 +128,53 @@ class MobileLLM {
             
             // Check for WebGPU support with better mobile detection
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             const hasWebGPU = !!navigator.gpu;
             
+            // For iOS, try to enable WebGPU even if not detected initially
+            if (isIOS && !hasWebGPU) {
+                this.updateStatus('iOS detected - Attempting to enable WebGPU...', 20);
+                
+                // Try to request WebGPU adapter on iOS
+                try {
+                    if (navigator.gpu) {
+                        const adapter = await navigator.gpu.requestAdapter();
+                        if (adapter) {
+                            console.log('WebGPU adapter found on iOS');
+                        }
+                    }
+                } catch (e) {
+                    console.log('WebGPU not available on this iOS version');
+                }
+            }
+            
             if (!hasWebGPU) {
-                if (isMobile) {
+                if (isIOS) {
+                    this.updateStatus('iOS Safari detected - Limited WebGPU support', 30);
+                    this.addMessage('assistant', `📱 **iOS Safari Detected**\n\niOS Safari has limited WebGPU support, but we can try alternative approaches:\n\n✅ **Try the upload anyway** - Some iOS versions support WebGPU\n✅ **Test with smaller models** - May work with reduced precision\n✅ **Use Safari Technology Preview** - Better WebGPU support\n✅ **Try Chrome on iOS** - Sometimes better WebGPU support\n\n**Current mode:** Attempting to load with limited support`);
+                    
+                    // Continue anyway for iOS - some versions might work
+                    this.updateStatus('Attempting to load MediaPipe on iOS...', 40);
+                } else if (isMobile) {
                     this.updateStatus('Mobile browser detected - WebGPU not available', 30);
                     this.addMessage('assistant', `📱 **Mobile Browser Detected**\n\nYour mobile browser doesn't support WebGPU, which is required for running AI models locally. However, you can still:\n\n✅ **Test the interface** - Try the demo mode\n✅ **Upload model files** - Test the upload functionality\n✅ **Explore settings** - Adjust parameters\n\n**For full AI functionality, try:**\n• Chrome 113+ on Android\n• Safari 16.4+ on iOS\n• Desktop browsers with WebGPU support\n\n**Current mode:** Demo mode with simulated responses`);
+                    
+                    this.updateStatus('Using demo mode - WebGPU not supported', 50);
+                    this.isInitialized = true;
+                    if (this.sendBtn) {
+                        this.sendBtn.disabled = false;
+                    }
+                    return;
                 } else {
                     this.addMessage('assistant', `🌐 **WebGPU Not Available**\n\nYour browser doesn't support WebGPU, which is required for running AI models locally. Please try:\n\n✅ **Chrome 113+** (recommended)\n✅ **Safari 16.4+**\n✅ **Firefox 113+**\n✅ **Edge 113+**\n\n**Current mode:** Demo mode with simulated responses`);
+                    
+                    this.updateStatus('Using demo mode - WebGPU not supported', 50);
+                    this.isInitialized = true;
+                    if (this.sendBtn) {
+                        this.sendBtn.disabled = false;
+                    }
+                    return;
                 }
-                
-                this.updateStatus('Using demo mode - WebGPU not supported', 50);
-                this.isInitialized = true;
-                if (this.sendBtn) {
-                    this.sendBtn.disabled = false;
-                }
-                return;
             }
 
             this.updateStatus('WebGPU detected - Loading MediaPipe GenAI...', 20);
@@ -151,27 +182,59 @@ class MobileLLM {
             // Try to load MediaPipe GenAI dynamically
             let FilesetResolver, LlmInference;
             try {
-                const mediapipeModule = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@latest/genai_bundle.mjs');
+                // For iOS, try a more compatible version
+                const mediapipeUrl = isIOS ? 
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.23/genai_bundle.mjs' :
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@latest/genai_bundle.mjs';
+                
+                const mediapipeModule = await import(mediapipeUrl);
                 FilesetResolver = mediapipeModule.FilesetResolver;
                 LlmInference = mediapipeModule.LlmInference;
             } catch (importError) {
-                console.warn('MediaPipe GenAI not available, using fallback:', importError);
-                this.updateStatus('MediaPipe GenAI not available. Using demo mode.', 50);
-                this.isInitialized = true;
-                if (this.sendBtn) {
-                    this.sendBtn.disabled = false;
+                console.warn('MediaPipe GenAI not available, trying fallback:', importError);
+                
+                // Try alternative CDN for iOS
+                if (isIOS) {
+                    try {
+                        const fallbackModule = await import('https://unpkg.com/@mediapipe/tasks-genai@0.10.23/genai_bundle.mjs');
+                        FilesetResolver = fallbackModule.FilesetResolver;
+                        LlmInference = fallbackModule.LlmInference;
+                        console.log('Loaded MediaPipe from fallback CDN');
+                    } catch (fallbackError) {
+                        console.warn('Fallback CDN also failed:', fallbackError);
+                        this.updateStatus('MediaPipe GenAI not available on iOS. Using demo mode.', 50);
+                        this.isInitialized = true;
+                        if (this.sendBtn) {
+                            this.sendBtn.disabled = false;
+                        }
+                        this.addMessage('assistant', '🔧 **MediaPipe GenAI Not Available on iOS**\n\niOS Safari has limitations with MediaPipe GenAI loading. This might be due to:\n\n• iOS security restrictions\n• WASM loading issues\n• Network connectivity\n\n**Current mode:** Demo mode with simulated responses\n\nYou can still test the upload functionality and interface!');
+                        return;
+                    }
+                } else {
+                    this.updateStatus('MediaPipe GenAI not available. Using demo mode.', 50);
+                    this.isInitialized = true;
+                    if (this.sendBtn) {
+                        this.sendBtn.disabled = false;
+                    }
+                    this.addMessage('assistant', '🔧 **MediaPipe GenAI Not Available**\n\nWhile WebGPU is supported, the MediaPipe GenAI library couldn\'t be loaded. This might be due to:\n\n• Network connectivity issues\n• CDN availability\n• Browser compatibility\n\n**Current mode:** Demo mode with simulated responses\n\nYou can still test the upload functionality and interface!');
+                    return;
                 }
-                this.addMessage('assistant', '🔧 **MediaPipe GenAI Not Available**\n\nWhile WebGPU is supported, the MediaPipe GenAI library couldn\'t be loaded. This might be due to:\n\n• Network connectivity issues\n• CDN availability\n• Browser compatibility\n\n**Current mode:** Demo mode with simulated responses\n\nYou can still test the upload functionality and interface!');
-                return;
             }
 
             this.updateStatus('Initializing GenAI tasks...', 60);
             
             try {
-                this.genai = await FilesetResolver.forGenAiTasks(
-                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.23/wasm"
-                );
+                // For iOS, use a more compatible WASM URL
+                const wasmUrl = isIOS ? 
+                    "https://unpkg.com/@mediapipe/tasks-genai@0.10.23/wasm" :
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.23/wasm";
+                
+                this.genai = await FilesetResolver.forGenAiTasks(wasmUrl);
                 this.LlmInference = LlmInference;
+
+                const successMessage = isIOS ? 
+                    '🚀 **iOS AI Mode Ready!**\n\nMediaPipe GenAI loaded successfully on iOS!\n\n**Next steps:**\n1. Click "📁 Load Model File" to upload your Gemma model\n2. iOS may have memory limitations - smaller models work better\n3. Or start chatting in demo mode to test the interface\n\n**Supported model formats:** .bin files (~1.3GB for Gemma 2B)' :
+                    '🚀 **Full AI Mode Ready!**\n\nYour browser supports WebGPU and MediaPipe GenAI is loaded successfully!\n\n**Next steps:**\n1. Click "📁 Load Model File" to upload your Gemma model\n2. Or start chatting in demo mode to test the interface\n\n**Supported model formats:** .bin files (~1.3GB for Gemma 2B)';
 
                 this.updateStatus('✅ Ready to load model! Click "Load Model File" to upload your model.', 100);
                 this.isInitialized = true;
@@ -180,7 +243,7 @@ class MobileLLM {
                 }
                 
                 // Add welcome message
-                this.addMessage('assistant', '🚀 **Full AI Mode Ready!**\n\nYour browser supports WebGPU and MediaPipe GenAI is loaded successfully!\n\n**Next steps:**\n1. Click "📁 Load Model File" to upload your Gemma model\n2. Or start chatting in demo mode to test the interface\n\n**Supported model formats:** .bin files (~1.3GB for Gemma 2B)');
+                this.addMessage('assistant', successMessage);
 
             } catch (genaiError) {
                 console.warn('GenAI initialization failed:', genaiError);
@@ -189,7 +252,12 @@ class MobileLLM {
                 if (this.sendBtn) {
                     this.sendBtn.disabled = false;
                 }
-                this.addMessage('assistant', '⚠️ **GenAI Initialization Failed**\n\nWebGPU is available but MediaPipe GenAI couldn\'t be initialized. This might be due to:\n\n• WASM loading issues\n• Memory constraints\n• Browser security restrictions\n\n**Current mode:** Demo mode with simulated responses\n\nYou can still test the upload functionality!');
+                
+                const errorMessage = isIOS ?
+                    '⚠️ **GenAI Initialization Failed on iOS**\n\niOS Safari has limitations with MediaPipe GenAI initialization. This might be due to:\n\n• iOS memory constraints\n• WASM loading restrictions\n• Safari security policies\n• Network connectivity issues\n\n**Current mode:** Demo mode with simulated responses\n\nYou can still test the upload functionality!' :
+                    '⚠️ **GenAI Initialization Failed**\n\nWebGPU is available but MediaPipe GenAI couldn\'t be initialized. This might be due to:\n\n• WASM loading issues\n• Memory constraints\n• Browser security restrictions\n\n**Current mode:** Demo mode with simulated responses\n\nYou can still test the upload functionality!';
+                
+                this.addMessage('assistant', errorMessage);
             }
 
         } catch (error) {
@@ -220,9 +288,16 @@ class MobileLLM {
 
         // Validate file size (should be around 1.3GB for Gemma 2B)
         const fileSizeGB = file.size / (1024 * 1024 * 1024);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
         if (fileSizeGB < 0.5 || fileSizeGB > 3) {
             this.updateUploadStatus(`File size (${fileSizeGB.toFixed(1)}GB) seems unusual for a Gemma model. Expected ~1.3GB.`, 'error');
             return;
+        }
+        
+        // For iOS, warn about memory limitations
+        if (isIOS && fileSizeGB > 1.5) {
+            this.updateUploadStatus(`⚠️ Large model detected (${fileSizeGB.toFixed(1)}GB). iOS may have memory limitations.`, 'loading');
         }
 
         this.updateUploadStatus('Uploading model file...', 'loading');

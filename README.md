@@ -132,6 +132,12 @@ https://yourusername.github.io/mobile-llm-chat
    - Close other apps while using
    - Keep device plugged in for extended use
 
+4. **iOS-Specific Tips**
+   - Use Safari for best WebGPU support
+   - Try Safari Technology Preview for better compatibility
+   - Keep other apps closed to free up memory
+   - Consider smaller models for better performance
+
 ## Technical Details
 
 ### Architecture
@@ -158,7 +164,7 @@ https://yourusername.github.io/mobile-llm-chat
 | Mobile Safari | 16.4+ | ⚠️ Limited | 🔶 Partial (demo mode) |
 | Older browsers | < 113 | ❌ No | 🔴 Demo mode only |
 
-**Note:** Mobile browsers have limited WebGPU support, so the app will run in demo mode on mobile devices. The upload functionality still works for testing purposes.
+**Note:** Mobile browsers have limited WebGPU support, but the app now includes iOS-specific optimizations to attempt real AI functionality on iPhone/iPad. The upload functionality works for testing purposes.
 
 ## Troubleshooting
 
